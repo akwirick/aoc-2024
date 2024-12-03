@@ -5,7 +5,7 @@ use code_timing_macros::time_snippet;
 use const_format::concatcp;
 use adv_code_2024::*;
 
-const DAY: &str = "02"; // TODO: Fill the day
+const DAY: &str = "02";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
 
 const TEST: &str = "\
@@ -15,7 +15,7 @@ const TEST: &str = "\
 1 3 2 4 5
 8 6 4 4 1
 1 3 6 7 9
-"; // TODO: Add the test input
+";
 
 fn main() -> Result<()> {
     start_day(DAY);
@@ -23,14 +23,64 @@ fn main() -> Result<()> {
     //region Part 1
     println!("=== Part 1 ===");
 
-    fn part1<R: BufRead>(reader: R) -> Result<usize> {
-        // TODO: Solve Part 1 of the puzzle
-        let answer = reader.lines().flatten().count();
-        Ok(answer)
+
+    // A safe level is monotonically increasing or decreasing AND increase by at least 1 but not more than 3 between each number
+    fn is_safe_level(level: &[i64]) -> Result<bool> {
+        let mut cur = level[0];
+        let mut next = level[1];
+
+        // It has to monotonically increase or decrease
+        let direction = (next - cur).signum();
+
+        if direction == 0 {
+            return Ok(false)
+        }
+
+        for i in 1..level.len() {
+            cur = level[i -1];
+            next = level[i];
+            let diff = next - cur;
+            let dir = diff.signum();
+            let change = diff.abs();
+
+            // Must maintain the same direction
+            if dir != direction {
+                return Ok(false)
+            }
+
+            // Must change by at least 1 but not more than 3
+            if (change < 1) || (change > 3) {
+                return Ok(false)
+            }
+        }
+
+        Ok(true)
     }
 
-    // TODO: Set the expected answer for the test input
-    assert_eq!(0, part1(BufReader::new(TEST.as_bytes()))?);
+
+    // Calculate the number of safe and unsafe levels
+    fn part1<R: BufRead>(reader: R) -> Result<usize> {
+        // We can process each row independently
+        let mut safe: usize = 0;
+
+        for line in reader.lines() {
+            let line = line?;
+            let mut parts = line.split_whitespace();
+            let mut level = Vec::new();
+            for part in parts {
+                level.push(part.parse::<i64>()?);
+            }
+
+            if is_safe_level(&level)? {
+                // println!("{:?} was safe", level);
+                safe += 1;
+            }
+        }
+
+        Ok(safe)
+    }
+
+    assert_eq!(2, part1(BufReader::new(TEST.as_bytes()))?);
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
