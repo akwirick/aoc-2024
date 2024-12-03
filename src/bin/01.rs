@@ -1,5 +1,5 @@
 #![feature(binary_heap_into_iter_sorted)]
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use anyhow::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -62,17 +62,47 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        // Calculate similarity scores between the two lists
+        let mut left = Vec::new();
+        let mut right = HashMap::new();
+
+        for line in reader.lines() {
+            let line = line?;
+            let mut parts = line.split_whitespace();
+            let l = parts.next().ok_or(anyhow!("Invalid input"))?.parse::<i64>()?;
+            let r = parts.next().ok_or(anyhow!("Invalid input"))?.parse::<i64>()?;
+
+            left.push(l);
+
+            // Basically computeIfAbsent
+            let v = right.get_mut(&r);
+            if let Some(v) = v {
+                *v += 1;
+            } else {
+                right.insert(r, 1);
+            }
+        }
+
+        let mut score = 0;
+
+        for i in left.iter() {
+            let count = right.get(&i).unwrap_or(&0);
+            if count > &0 {
+                score += i * count;
+            }
+        }
+
+        Ok(score as usize)
+    }
+
+    assert_eq!(31, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
